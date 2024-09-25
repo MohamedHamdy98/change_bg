@@ -1,0 +1,27 @@
+# Use an official NVIDIA base image with CUDA support
+FROM nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu20.04
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Copy only the requirements file first to leverage Docker cache
+COPY requirements.txt .
+
+# Install any needed packages specified in requirements.txt
+RUN pip install --upgrade pip && \
+    pip install -r requirements.txt
+
+# Install system packages (like ffmpeg) and clean up to reduce image size
+RUN apt update && \
+    apt install --no-install-recommends -y ffmpeg && \
+    apt clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy the rest of the application code into the container
+COPY . /app
+
+# Expose port 8000 for the FastAPI app
+EXPOSE 8000
+
+# Define the entry point for the FastAPI app
+CMD ["uvicorn", "app_fast:app", "--host", "0.0.0.0", "--port", "8000"]

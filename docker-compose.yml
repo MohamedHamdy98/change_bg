@@ -1,0 +1,13 @@
+version: '3.9'
+
+services:
+  app:
+    build:
+      context: .  # Use the current directory as the build context
+      dockerfile: Dockerfile
+    image: change_bg_cpu_docker_fast_api:latest
+    ports:
+      - "8000:8000"  # Map port 5000 on the host to port 5000 in the container
+    volumes:
+      - .:/app  # Mount the current directory to /app in the container
+    command: ["uvicorn", "app_fast:app", "--host", "0.0.0.0", "--port", "8000"]
