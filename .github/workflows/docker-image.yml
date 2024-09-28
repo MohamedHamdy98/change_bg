@@ -21,8 +21,11 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
         
+    - name: Set up Docker image tag
+      run: echo "IMAGE_TAG=change-bg-fastapi-docker:$(date +%s)" >> $GITHUB_ENV
+
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag change-bg-fastapi-docker:$(date +%s)
+      run: docker build . --file Dockerfile --tag ${{ env.IMAGE_TAG }}
       
     - name: Push the Docker image
-      run: docker push change-bg-fastapi-docker:$(date +%s)
+      run: docker push ${{ env.IMAGE_TAG }}
