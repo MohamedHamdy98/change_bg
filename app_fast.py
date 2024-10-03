@@ -7,10 +7,11 @@ from rembg import remove
 from tqdm import tqdm
 import gdown
 import logging
-from fastapi import FastAPI, File, Form, UploadFile
+from fastapi import FastAPI, File, Form, UploadFile, Depends
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from typing import Optional
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -66,15 +67,38 @@ def download_from_google_drive(url, output_path):
     except Exception as e:
         print(f"Failed to download file from {url}. Error: {str(e)}")
 
-# Pydantic model for request validation
+# Pydantic model for JSON input
 class ChangeBackgroundRequest(BaseModel):
-    video_url: str
-    background_url: str
+    video_url: Optional[str] = None
+    background_url: Optional[str] = None
+
+# Helper function to handle either form or JSON input
+async def form_or_json(
+    video_url: Optional[str] = None,
+    background_url: Optional[str] = None,
+    request: ChangeBackgroundRequest = Depends()
+):
+    # Prioritize form data if provided, otherwise use JSON
+    if not video_url:
+        video_url = request.video_url
+    if not background_url:
+        background_url = request.background_url
+
+    # Raise an error if either video_url or background_url is missing
+    if not video_url or not background_url:
+        raise HTTPException(status_code=400, detail="Both video_url and background_url are required.")
+    
+    return {"video_url": video_url, "background_url": background_url}
 
 # Endpoint to process video
 @app.post('/change_background')
-async def change_background(video_url: str = Form(...), background_url: str = Form(...)):
+async def change_background(video_url: Optional[str] = Form(None), background_url: Optional[str] = Form(None), request: ChangeBackgroundRequest = Depends()):
     try:
+        # Extract data from form or JSON
+        data = await form_or_json(video_url, background_url, request)
+        video_url = data['video_url']
+        background_url = data['background_url']
+        
         logging.debug("Starting background change process.")
         clear_directories([OUTPUT_FRAMES_DIR])
         os.makedirs(OUTPUT_FRAMES_DIR, exist_ok=True)
