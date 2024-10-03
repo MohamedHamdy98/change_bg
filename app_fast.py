@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
+from pathlib import Path
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -27,10 +28,10 @@ app.add_middleware(
 )
 
 # Define paths for input, output, and processing status
-ROOP_PATH = 'srv/'
-OUTPUT_FRAMES_DIR = 'srv/output_frames'
-OUTPUT_VIDEO_PATH = 'srv/output_video.mp4'
-PROCESSING_COMPLETE_FLAG = 'srv/processing_complete.txt'
+ROOP_PATH = Path('srv/')
+OUTPUT_FRAMES_DIR = ROOP_PATH / 'output_frames'
+OUTPUT_VIDEO_PATH = ROOP_PATH / 'output_video.mp4'
+PROCESSING_COMPLETE_FLAG = ROOP_PATH / 'processing_complete.txt'
 
 # Helper function to create directories if they don't exist
 def create_directory_if_not_exists(directory):
@@ -107,8 +108,8 @@ async def change_background(video_url: Optional[str] = Form(None), background_ur
             logging.error('Both video URL and background URL are required.')
             return JSONResponse(content={'error': 'Both video URL and background URL are required.'}, status_code=400)
 
-        input_video_path = os.path.join(ROOP_PATH, 'input_video.mp4')
-        new_background_path = os.path.join(ROOP_PATH, 'new_background.jpg')
+        input_video_path = ROOP_PATH / 'input_video.mp4'
+        new_background_path = ROOP_PATH / 'new_background.jpg'
 
         logging.debug(f"Downloading video from: {video_url}")
         download_from_google_drive(video_url, input_video_path)
@@ -176,9 +177,9 @@ async def change_background(video_url: Optional[str] = Form(None), background_ur
             f.write('Processing complete')
 
         return JSONResponse(content={'message': 'Video processing started. Check the status for completion.',
-                                     'video_input': input_video_path,
-                                     'image_back': new_background_path,
-                                     'output_path': OUTPUT_VIDEO_PATH}, status_code=202)
+                                     'video_input': str(input_video_path),
+                                     'image_back': str(new_background_path),
+                                     'output_path': str(OUTPUT_VIDEO_PATH)}, status_code=202)
 
     except Exception as e:
         logging.error(f"Exception occurred: {str(e)}")
@@ -187,11 +188,11 @@ async def change_background(video_url: Optional[str] = Form(None), background_ur
 @app.get('/get_path_change_bg')
 async def get_path_change_bg():
     try:
-        if os.path.exists(OUTPUT_VIDEO_PATH):
+        if OUTPUT_VIDEO_PATH.exists():
             return JSONResponse(content={
                 'status': 'success',
                 'message': 'Output file path retrieved successfully',
-                'output_path': OUTPUT_VIDEO_PATH
+                'output_path': str(OUTPUT_VIDEO_PATH)
             })
         else:
             return JSONResponse(content={
